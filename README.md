@@ -1,4 +1,4 @@
 Chirp-benchmark
 ===============
 
-Chirp: Twitter-like workload generator
+Twitter-like workload generator
