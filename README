@@ -1,5 +1,5 @@
 
-Chirp Benchmark 0.3
+Chirp Benchmark 1.0
 ===================
 
 Use the Chirp Python script to generate a benchmark file that is formatted as below:
@@ -16,14 +16,14 @@ Use the Chirp Python script to generate a benchmark file that is formatted as be
 		- a tweet 'ID' for reads on primary key
 		- a tweet 'UserID' for reads on secondary key
 
-Just run 'benchmark_gen.py' on the command line with the required parameters. Check out the example for more details.
+Just run 'chirp.py' on the command line with the required parameters. Check out the example for more details.
 
-Try './benchmark_gen.py --help' for usage.
+Try './chirp.py --help' for usage.
 
 
 Minimum requirements
 --------------------
 
 Python 2.7
-UltraJSON 1.33 - https://pypi.python.org/pypi/ujson
+Optional, but highly recommended: UltraJSON 1.33 - https://pypi.python.org/pypi/ujson
 
