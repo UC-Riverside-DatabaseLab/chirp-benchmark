@@ -96,7 +96,9 @@ def extract_info():
                 record = ujson.loads(record)
             except:
                 continue
-            ids.append(id(record))
+            rec_id = id(record)
+            if rec_id[0] and rec_id[1]:
+                ids.append(rec_id)
             if timestamp(record) > max_time:
                 max_time = timestamp(record)
             if timestamp(record) < min_time:
