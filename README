@@ -1,0 +1,17 @@
+Chirp Benchmark
+================
+
+To use Chirp and generate a tab-separated benchmark file.
+
+1. Run the 'benchmark_gen.cc' file on a file containing one JSON object per line.
+2. Set workload parameters in the 'benchmark_gen.py' file and run it to generate the 'benchmark.file' file.
+
+Please check the files in the example folder for more details.
+
+
+Requirements
+-------------
+
+Chirp uses RapidJSON for parsing the JSON objects in the input file.
+RapidJSON is available for download at: http://code.google.com/p/rapidjson/
+
