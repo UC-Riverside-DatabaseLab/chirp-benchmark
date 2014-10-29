@@ -1,17 +1,29 @@
-Chirp Benchmark
-================
 
-To use Chirp and generate a tab-separated benchmark file.
+Chirp Benchmark 0.3
+===================
 
-1. Run the 'benchmark_gen.cc' file on a file containing one JSON object per line.
-2. Set workload parameters in the 'benchmark_gen.py' file and run it to generate the 'benchmark.file' file.
+Use the Chirp Python script to generate a benchmark file that is formatted as below:
 
-Please check the files in the example folder for more details.
+- Tab-separated
+- Each line contains:
+	- a timestamp, in milliseconds
+	- a command:
+		- w for writes
+		- rp for reads on primary key
+		- rs for reads on secondary key
+	- a value:
+		- a JSON tweet object for writes
+		- a tweet 'ID' for reads on primary key
+		- a tweet 'UserID' for reads on secondary key
+
+Just run 'benchmark_gen.py' on the command line with the required parameters. Check out the example for more details.
+
+Try './benchmark_gen.py --help' for usage.
 
 
-Requirements
--------------
+Minimum requirements
+--------------------
 
-Chirp uses RapidJSON for parsing the JSON objects in the input file.
-RapidJSON is available for download at: http://code.google.com/p/rapidjson/
+Python 2.7
+UltraJSON 1.33 - https://pypi.python.org/pypi/ujson
 
