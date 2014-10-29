@@ -19,7 +19,10 @@ FileParameters = collections.namedtuple('FileParameters', 'input_file pre_sorted
 
 # Helper function 1: extracts key for a given record
 def sort_key(data):
-    parsed_data = ujson.loads(data)
+    try:
+        parsed_data = ujson.loads(data)
+    except:
+        return (int('0xdbe928f86f85143c8282db0da081c05530ea2163', 16),) # kludge: magic key indicates unparsable json
     return tuple([parsed_data[field] for field in process_parameters.sort_fields])
 
 
@@ -35,7 +38,10 @@ def merge(key, *iterables):
 
     keyed_iterables = [(Keyed(key(obj), obj) for obj in iterable) for iterable in iterables]
     for element in heapq.merge(*keyed_iterables):
-        yield element.obj
+        if element.key != (int('0xdbe928f86f85143c8282db0da081c05530ea2163', 16),):
+            yield element.obj
+        else:
+            continue
 
 def batch_sort():
     tempdirs = file_parameters.temp_dirs
@@ -86,7 +92,10 @@ def extract_info():
     with open(input,'rb',1) as sorted_file:
         records = (line.strip() for line in sorted_file)
         for record in records:
-            record = ujson.loads(record)
+            try:
+                record = ujson.loads(record)
+            except:
+                continue
             ids.append(id(record))
             if timestamp(record) > max_time:
                 max_time = timestamp(record)
@@ -152,10 +161,13 @@ def generate_benchmark():
             # generate tweet to be read based on Zipf distribution
             tweet_to_read = tweets[random.choice(tweet_indices_to_read)]
             toss = random.random()
-            if toss > p_threshold:
-                w.write('\t'.join([str(int(read_time/benchmark_parameters.speedup)).zfill(8),'rp',str(tweet_to_read[0])])+'\n')
-            else:
-                w.write('\t'.join([str(int(read_time/benchmark_parameters.speedup)).zfill(8),'rs',str(tweet_to_read[1])])+'\n')
+            try:
+                if toss > p_threshold:
+                    w.write('\t'.join([str(int(read_time/benchmark_parameters.speedup)).zfill(8),'rp',str(tweet_to_read[0])])+'\n')
+                else:
+                    w.write('\t'.join([str(int(read_time/benchmark_parameters.speedup)).zfill(8),'rs',str(tweet_to_read[1])])+'\n')
+            except UnicodeEncodeError:
+                pass
 
     input.close()
 
@@ -203,10 +215,10 @@ def parse_args():
     parser.add_argument('-tf', action='store', dest='time_field', default='CreationTime', help=help)
 
     help = 'List of fields to be used to sort JSON records in the input file. Should include the timestamp field as the first field. Repeat flag and provide multiple fields in the required order. Default value is [\'CreationTime\', \'ID\'].'
-    parser.add_argument('-sf', action='append', dest='sort_fields', default=['CreationTime', 'ID'], help=help)
+    parser.add_argument('-sf', action='append', dest='sort_fields', default=[], help=help)
 
     help = 'List of primary and secondary key fields. It should be possible to extract these fields and hold in memory for all records. Repeat flag and provide the primary key followed by the secondary key. Default value is [\'ID\', \'UserID\'].'
-    parser.add_argument('-kf', action='append', dest='key_fields', default=['ID', 'UserID'], help=help)
+    parser.add_argument('-kf', action='append', dest='key_fields', default=[], help=help)
 
     parser.add_argument('-v', '--version', action='version', version='%(prog)s 1.0')
 
@@ -224,8 +236,8 @@ def parse_args():
     global process_parameters
     process_parameters = ProcessingParameters(buffer_size = args.buffer_size,
                                               time_field = args.time_field,
-                                                     sort_fields = args.sort_fields,
-                                                     key_fields = args.key_fields)
+                                                     sort_fields = args.sort_fields if args.sort_fields else ['CreationTime', 'ID'],
+                                                     key_fields = args.key_fields if args.key_fields else ['ID', 'UserID'])
 
     global benchmark_parameters
     benchmark_parameters = BenchmarkParameters(speedup = args.speedup,
