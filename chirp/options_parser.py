@@ -2,7 +2,7 @@
 #coding: utf-8
 
 import os, argparse, operator
-from commons import *
+from commons import ProcessingParameters, BenchmarkParameters, FileParameters
 
 
 # Command line options parser code

@@ -12,7 +12,6 @@ def extract_info(process_parameters, file_parameters):
     id = lambda data: tuple([data[field] for field in process_parameters.key_fields])
     timestamp = lambda data: data[process_parameters.time_field]
 
-    global ids
     ids = []
     max_time = float('-inf')
     min_time = float('inf')
@@ -32,7 +31,7 @@ def extract_info(process_parameters, file_parameters):
             if timestamp(record) < min_time:
                 min_time = timestamp(record)
 
-    return max_time, min_time
+    return ids, max_time, min_time
 
 
 # Benchmark generation code
@@ -40,8 +39,7 @@ def generate_benchmark(process_parameters, benchmark_parameters, file_parameters
     input = open((file_parameters.input_file if file_parameters.pre_sorted else file_parameters.sorted_file),'rb',1)
     sorted_file = (line.strip() for line in input)
 
-    max_time, zero_time = extract_info(process_parameters, file_parameters)
-    tweets = ids
+    tweets, max_time, zero_time = extract_info(process_parameters, file_parameters)
     number_of_tweets = len(tweets)
 
     # calculate parameter lambda for a Poisson distribution of reads
