@@ -41,6 +41,12 @@ def parse_args():
     help = 'Desired reads on primary key to reads on secondary key ratio in the output benchmark file. Default value is 10.'
     parser.add_argument('-ps', action='store', type=float, dest='ps_ratio', default=10, help=help)
 
+    help = 'Desired freshness of reads. The higher the number the more likely are reads on recent writes. Default value is 0, i.e. all records in read buffer are equally likely to be picked - maximum \'staleness\'.'
+    parser.add_argument('-f', action='store', type=float, dest='freshness', default=0, help=help)
+
+    help = 'Read buffer size in terms of number of recently written IDs to remember for reading. Default value is 5,000 IDs.'
+    parser.add_argument('-rb', action='store', type=int, dest='read_buffer', default=5000, help=help)
+
     help = 'Memory buffer size for sorting in terms of number of lines of input file. Default value is 500,000 lines.'
     parser.add_argument('-bs', action='store', type=int, dest='buffer_size', default=500000, help=help)
 
@@ -73,7 +79,9 @@ def parse_args():
 
     benchmark_parameters = BenchmarkParameters(speedup = args.speedup,
                                                       rw_ratio = args.rw_ratio,
-                                                      ps_ratio = args.ps_ratio)
+                                                      ps_ratio = args.ps_ratio,
+                                                      freshness = args.freshness,
+                                                      read_buffer = args.read_buffer)
 
     file_parameters = FileParameters(input_file = args.in_file,
                                             pre_sorted = args.pre_sorted,
