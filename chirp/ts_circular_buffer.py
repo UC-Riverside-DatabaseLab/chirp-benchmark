@@ -6,7 +6,6 @@ import random, math
 
 class TSCircularBuffer():
 
-
     def __init__(self, size):
         self._data = dict()
         self._cum_prob = list()

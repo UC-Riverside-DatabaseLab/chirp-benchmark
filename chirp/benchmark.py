@@ -3,99 +3,77 @@
 
 import random, os, math
 from commons import ujson
+from ts_circular_buffer import TSCircularBuffer
 
 
-# Helper function 2: reads sorted file and extracts info required for generating benchmark
-def extract_info(process_parameters, file_parameters):
-    input = (file_parameters.input_file if file_parameters.pre_sorted else file_parameters.sorted_file)
-
-    id = lambda data: tuple([data[field] for field in process_parameters.key_fields])
+# Extracts information about the JSON file that has been sorted by the timestamp field
+def extractInfo(process_parameters, file_parameters):
+    input_ = (file_parameters.input_file if file_parameters.pre_sorted else file_parameters.sorted_file)
+    
     timestamp = lambda data: data[process_parameters.time_field]
-
-    ids = []
-    max_time = float('-inf')
-    min_time = float('inf')
-
-    with open(input,'rb',1) as sorted_file:
-        records = (line.strip() for line in sorted_file)
-        for record in records:
-            try:
-                record = ujson.loads(record)
-            except:
-                continue
-            rec_id = id(record)
-            if rec_id[0] and rec_id[1]:
-                ids.append(rec_id)
-            if timestamp(record) > max_time:
-                max_time = timestamp(record)
-            if timestamp(record) < min_time:
-                min_time = timestamp(record)
-
-    return ids, max_time, min_time
+    
+    first_tweet = ujson.loads(os.popen("head -1 " + input_).readlines()[0].strip())
+    last_tweet = ujson.loads(os.popen("tail -1 " + input_).readlines()[0].strip())
+    number_of_tweets = int(os.popen("wc -l " + input_).readlines()[0].strip().split()[0])
+    
+    return number_of_tweets, timestamp(last_tweet), timestamp(first_tweet)
 
 
 # Benchmark generation code
 def generate_benchmark(process_parameters, benchmark_parameters, file_parameters):
-    input = open((file_parameters.input_file if file_parameters.pre_sorted else file_parameters.sorted_file),'rb',1)
-    sorted_file = (line.strip() for line in input)
+    
+    with open((file_parameters.input_file if file_parameters.pre_sorted else file_parameters.sorted_file),'rb',1) as input_:
+        
+        sorted_file = (line.strip() for line in input_)
+    
+        number_of_tweets, max_time, zero_time = extractInfo(process_parameters, file_parameters)
 
-    tweets, max_time, zero_time = extract_info(process_parameters, file_parameters)
-    number_of_tweets = len(tweets)
+        # Calculate parameter lambda for a Poisson distribution of reads
+        duration = max_time - zero_time
+        number_of_reads = float(benchmark_parameters.rw_ratio) * number_of_tweets
+        lambda_for_reads = number_of_reads / duration # in tweets per millisecond
+        
+        # Create a buffer that will store a fixed number of previously wriiten tweets
+        tweets = TSCircularBuffer(benchmark_parameters.read_buffer)
+        id_ = lambda data: tuple([data[field] for field in process_parameters.key_fields])
+        
+        # Generate benchmark
+        read_time = 0
+        p_threshold = 1/(1 + float(benchmark_parameters.ps_ratio))
+        flush_limit = int(process_parameters.buffer_size / benchmark_parameters.rw_ratio)
+        write_count = 0
+        tweet_to_write = ujson.loads(sorted_file.next())
+        tweet_timestamp = tweet_to_write[process_parameters.time_field] - zero_time
 
-    # calculate parameter lambda for a Poisson distribution of reads
-    duration = max_time - zero_time
-    number_of_reads = float(benchmark_parameters.rw_ratio) * number_of_tweets
-    lambda_for_reads = number_of_reads / duration # in tweets per millisecond
+        with open(file_parameters.output_file, 'w', 64*1024) as w:
+            while read_time < duration:
+                read_time += int(random.expovariate(lambda_for_reads))
 
-    # create a list of tweet indices to be read with repeats according to Zipf distribution
-    first_tweet_frequency = int(number_of_reads / (math.log(number_of_tweets) + 0.5772156649)) # H_n ~ log(n) + Euler–Mascheroni constant
-    tweet_indices_to_read = []
-    rank_ = None
-    for rank_ in xrange(len(tweets)):
-        tweet_frequency = int(first_tweet_frequency / (rank_ + 1))
-        if tweet_frequency == 0:
-            break
-        tweet_indices_to_read += [rank_] * tweet_frequency
-    tweet_indices_to_read = tuple(tweet_indices_to_read)
+                # Enter sorted writes into benchmark
+                while write_count < number_of_tweets and tweet_timestamp <= read_time:
+                    w.write('\t'.join([str(int(tweet_timestamp/benchmark_parameters.speedup)).zfill(8),
+                                       'w',ujson.dumps(tweet_to_write)])+'\n')
+                    
+                    # Add the just-written tweet into the read buffer
+                    tweets.insert(id_(tweet_to_write), benchmark_parameters.freshness*tweet_timestamp/benchmark_parameters.speedup)
+                    
+                    try:
+                        tweet_to_write = ujson.loads(sorted_file.next())
+                        tweet_timestamp = tweet_to_write[process_parameters.time_field] - zero_time
+                    except:
+                        pass
+                    write_count += 1
+                    if write_count % flush_limit == 0:
+                        w.flush()
 
-    # remove tweets that will not be read to reduce memory footprint and make downstream calculations faster
-    random.shuffle(tweets)
-    tweets = tuple(tweets[:(rank_ + 1)])
-
-    # generate benchmark
-    read_time = 0
-    p_threshold = 1/(1 + float(benchmark_parameters.ps_ratio))
-    flush_limit = int(process_parameters.buffer_size / benchmark_parameters.rw_ratio)
-    write_count = 0
-    tweet_to_write = ujson.loads(sorted_file.next())
-    tweet_timestamp = tweet_to_write[process_parameters.time_field] - zero_time
-
-    with open(file_parameters.output_file, 'w', 64*1024) as w:
-        while read_time < duration:
-            read_time += int(random.expovariate(lambda_for_reads))
-
-            # enter sorted writes into benchmark
-            while write_count < number_of_tweets and tweet_timestamp <= read_time:
-                w.write('\t'.join([str(int(tweet_timestamp/benchmark_parameters.speedup)).zfill(8),'w',ujson.dumps(tweet_to_write)])+'\n')
+                # Generate tweet to be read based on Zipf distribution
+                tweet_to_read = tweets.rand()
+                toss = random.random()
                 try:
-                    tweet_to_write = ujson.loads(sorted_file.next())
-                    tweet_timestamp = tweet_to_write[process_parameters.time_field] - zero_time
-                except:
+                    if toss > p_threshold:
+                        w.write('\t'.join([str(int(read_time/benchmark_parameters.speedup)).zfill(8),'rp',str(tweet_to_read[0])])+'\n')
+                    else:
+                        w.write('\t'.join([str(int(read_time/benchmark_parameters.speedup)).zfill(8),'rs',str(tweet_to_read[1])])+'\n')
+                except UnicodeEncodeError:
                     pass
-                write_count += 1
-                if write_count % flush_limit == 0:
-                    w.flush()
-
-            # generate tweet to be read based on Zipf distribution
-            tweet_to_read = tweets[random.choice(tweet_indices_to_read)]
-            toss = random.random()
-            try:
-                if toss > p_threshold:
-                    w.write('\t'.join([str(int(read_time/benchmark_parameters.speedup)).zfill(8),'rp',str(tweet_to_read[0])])+'\n')
-                else:
-                    w.write('\t'.join([str(int(read_time/benchmark_parameters.speedup)).zfill(8),'rs',str(tweet_to_read[1])])+'\n')
-            except UnicodeEncodeError:
-                pass
-
-    input.close()
 

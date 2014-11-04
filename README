@@ -1,6 +1,6 @@
 
-Chirp Benchmark 1.2x
-====================
+Chirp Benchmark 2.0
+===================
 
 Use the Chirp Python script to generate a benchmark file that is formatted as below:
 
@@ -16,7 +16,9 @@ Use the Chirp Python script to generate a benchmark file that is formatted as be
 		- a tweet 'ID' for reads on primary key
 		- a tweet 'UserID' for reads on secondary key
 
-Just run 'run_chirp.py' on the command line with the required parameters. Check out the example for more details.
+Just execute 'run_chirp.py' on the command line with the required parameters. Check out the example for more details.
+
+A visual walkthrough is available at http://www.cs.ucr.edu/~ameno002/benchmark/.
 
 Try './run_chirp.py --help' for usage.
 
