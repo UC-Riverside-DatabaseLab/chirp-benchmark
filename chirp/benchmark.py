@@ -33,7 +33,7 @@ def generate_benchmark(process_parameters, benchmark_parameters, file_parameters
         number_of_reads = float(benchmark_parameters.rw_ratio) * number_of_tweets
         lambda_for_reads = number_of_reads / duration # in tweets per millisecond
         
-        # Create a buffer that will store a fixed number of previously wriiten tweets
+        # Create a buffer that will store a fixed number of previously written tweets
         tweets = TSCircularBuffer(benchmark_parameters.read_buffer)
         id_ = lambda data: tuple([data[field] for field in process_parameters.key_fields])
         
@@ -54,7 +54,7 @@ def generate_benchmark(process_parameters, benchmark_parameters, file_parameters
                     w.write('\t'.join([str(int(tweet_timestamp/benchmark_parameters.speedup)).zfill(8),
                                        'w',ujson.dumps(tweet_to_write)])+'\n')
                     
-                    # Add the just-written tweet into the read buffer
+                    # Insert the just-written tweet into the read buffer with a likelihood based on its timestamp and the freshness
                     tweets.insert(id_(tweet_to_write), benchmark_parameters.freshness*tweet_timestamp/benchmark_parameters.speedup)
                     
                     try:
@@ -66,7 +66,7 @@ def generate_benchmark(process_parameters, benchmark_parameters, file_parameters
                     if write_count % flush_limit == 0:
                         w.flush()
 
-                # Generate tweet to be read based on Zipf distribution
+                # Generate random tweet to be read from the buffer
                 tweet_to_read = tweets.rand()
                 toss = random.random()
                 try:
