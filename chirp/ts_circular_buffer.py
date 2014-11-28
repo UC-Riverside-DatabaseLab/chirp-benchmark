@@ -7,8 +7,7 @@ import random, math
 class TSCircularBuffer():
     '''A circular buffer that stores items and associated relative log-likelihood of reads on them.
     Allows picking random items based on these likelihoods. TSCircularBuffer gives O(1) amortized performance on inserts,
-    O(1) on indexed reads and O(logN) performance for random reads where N is the size of the buffer.
-    Consecutive inserts into the buffer are expected to have increasing log-likelihood values.'''
+    O(1) on indexed reads and O(logN) performance for random reads where N is the size of the buffer.'''
 
     def __init__(self, size):
         '''Initialize storage structures and state variables.'''
@@ -73,19 +72,24 @@ class TSCircularBuffer():
         # Calculate a cumulative probability threshold to search for taking into account the zero error
         threshold = random.random() * (self._cum_prob[self._cursor - 1] - self._prob_zero) + self._prob_zero
         
-        return self._thresholdItem(threshold, self._cursor - self._size if self._rolled_over_once else 0, self._cursor - 1 )
+        return self._thresholdItem(threshold)
     
     
-    def _thresholdItem(self, threshold, begin, end):
+    def _thresholdItem(self, threshold):
         '''Performs a binary search to find the item such that threshold lies in the cumulative probability range specified by the item.'''
     
-        if begin == end:
-            return self[begin]
-        else:
+        begin = self._cursor - self._size if self._rolled_over_once else 0
+        end = self._cursor - 1
+        
+        while begin != end:
             mid = (begin + end) / 2
+            
             if self._cum_prob[mid] < threshold:
-                return self._thresholdItem(threshold, mid + 1, end)
-            return self._thresholdItem(threshold, begin, mid)
+                begin = mid + 1
+            else:
+                end = mid
+        
+        return self[begin]
     
     
     def __getitem__(self, index):
