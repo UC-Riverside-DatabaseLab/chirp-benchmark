@@ -22,6 +22,7 @@ def extractInfo(process_parameters, file_parameters):
 # Benchmark generation code
 def generate_benchmark(process_parameters, benchmark_parameters, file_parameters):
     
+    lines_written = 0
     with open((file_parameters.input_file if file_parameters.pre_sorted else file_parameters.sorted_file),'rb',1) as input_:
         
         sorted_file = (line.strip() for line in input_)
@@ -54,6 +55,10 @@ def generate_benchmark(process_parameters, benchmark_parameters, file_parameters
                     w.write('\t'.join([str(int(tweet_timestamp/benchmark_parameters.speedup)).zfill(8),
                                        'w',ujson.dumps(tweet_to_write)])+'\n')
                     
+                    lines_written += 1
+                    if lines_written == benchmark_parameters.output_limit:
+                        return
+                    
                     # Insert the just-written tweet into the read buffer with a likelihood based on its timestamp and the freshness
                     tweets.insert(id_(tweet_to_write), benchmark_parameters.freshness*tweet_timestamp/benchmark_parameters.speedup)
                     
@@ -74,6 +79,11 @@ def generate_benchmark(process_parameters, benchmark_parameters, file_parameters
                         w.write('\t'.join([str(int(read_time/benchmark_parameters.speedup)).zfill(8),'rp',str(tweet_to_read[0])])+'\n')
                     else:
                         w.write('\t'.join([str(int(read_time/benchmark_parameters.speedup)).zfill(8),'rs',str(tweet_to_read[1])])+'\n')
+                    
+                    lines_written += 1
+                    if lines_written == benchmark_parameters.output_limit:
+                        return
+                    
                 except UnicodeEncodeError:
                     pass
 

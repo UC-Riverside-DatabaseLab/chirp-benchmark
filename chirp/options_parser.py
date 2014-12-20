@@ -47,6 +47,9 @@ def parse_args():
     help = 'Read buffer size in terms of number of recently written IDs to remember for reading. Default value is 5,000 IDs.'
     parser.add_argument('-rb', action='store', type=int, dest='read_buffer', default=5000, help=help)
 
+    help = 'Limit total number of commands in the output benchmark file. Default value depends on the number of JSON records in the input file and the read/write ratio.'
+    parser.add_argument('-lo', action='store', type=float, dest='output_limit', default=float('inf'), help=help)
+
     help = 'Memory buffer size for sorting in terms of number of lines of input file. Default value is 500,000 lines.'
     parser.add_argument('-bs', action='store', type=int, dest='buffer_size', default=500000, help=help)
 
@@ -81,7 +84,8 @@ def parse_args():
                                                       rw_ratio = args.rw_ratio,
                                                       ps_ratio = args.ps_ratio,
                                                       freshness = args.freshness,
-                                                      read_buffer = args.read_buffer)
+                                                      read_buffer = args.read_buffer,
+                                                      output_limit = args.output_limit)
 
     file_parameters = FileParameters(input_file = args.in_file,
                                             pre_sorted = args.pre_sorted,
