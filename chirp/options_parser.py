@@ -10,7 +10,7 @@ def parse_args():
     usage = """./chirp.py -i IN_FILE [-o OUT_FILE] [-bs BUFFER_SIZE]
                           [-su SPEEDUP] [-rw RW_RATIO] [-ps PS_RATIO]"""
 
-    description = 'Chirp benchmark program v1.0'
+    description = 'Chirp benchmark program v2.0'
 
     parser = argparse.ArgumentParser(usage=usage, description=description)
 
@@ -62,7 +62,7 @@ def parse_args():
     help = 'List of primary and secondary key fields. It should be possible to extract these fields and hold in memory for all records. Repeat flag and provide the primary key followed by the secondary key. Default value is [\'ID\', \'UserID\'].'
     parser.add_argument('-kf', action='append', dest='key_fields', default=[], help=help)
 
-    parser.add_argument('-v', '--version', action='version', version='%(prog)s 1.0')
+    parser.add_argument('-v', '--version', action='version', version='%(prog)s 2.0')
 
     args = parser.parse_args()
 

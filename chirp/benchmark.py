@@ -35,8 +35,10 @@ def generate_benchmark(process_parameters, benchmark_parameters, file_parameters
         lambda_for_reads = number_of_reads / duration # in tweets per millisecond
         
         # Create a buffer that will store a fixed number of previously written tweets
-        tweets = TSCircularBuffer(benchmark_parameters.read_buffer)
-        id_ = lambda data: tuple([data[field] for field in process_parameters.key_fields])
+        tweets_p = TSCircularBuffer(benchmark_parameters.read_buffer)
+        tweets_s = TSCircularBuffer(benchmark_parameters.read_buffer)
+        id_p = lambda data: data[process_parameters.key_fields[0]]
+        id_s = lambda data: data[process_parameters.key_fields[1]]
         
         # Generate benchmark
         read_time = 0
@@ -60,7 +62,10 @@ def generate_benchmark(process_parameters, benchmark_parameters, file_parameters
                         return
                     
                     # Insert the just-written tweet into the read buffer with a likelihood based on its timestamp and the freshness
-                    tweets.insert(id_(tweet_to_write), benchmark_parameters.freshness*tweet_timestamp/benchmark_parameters.speedup)
+                    if id_p(tweet_to_write):
+                        tweets_p.insert(id_p(tweet_to_write), benchmark_parameters.freshness*tweet_timestamp/benchmark_parameters.speedup)
+                    if id_s(tweet_to_write):
+                        tweets_s.insert(id_s(tweet_to_write), benchmark_parameters.freshness*tweet_timestamp/benchmark_parameters.speedup)
                     
                     try:
                         tweet_to_write = ujson.loads(sorted_file.next())
@@ -72,13 +77,16 @@ def generate_benchmark(process_parameters, benchmark_parameters, file_parameters
                         w.flush()
 
                 # Generate random tweet to be read from the buffer
-                tweet_to_read = tweets.rand()
                 toss = random.random()
                 try:
                     if toss > p_threshold:
-                        w.write('\t'.join([str(int(read_time/benchmark_parameters.speedup)).zfill(8),'rp',str(tweet_to_read[0])])+'\n')
+                        p_id = tweets_p.rand()
+                        if p_id:
+                            w.write('\t'.join([str(int(read_time/benchmark_parameters.speedup)).zfill(8),'rp',str(p_id)])+'\n')
                     else:
-                        w.write('\t'.join([str(int(read_time/benchmark_parameters.speedup)).zfill(8),'rs',str(tweet_to_read[1])])+'\n')
+                        s_id = tweets_s.rand()
+                        if s_id:
+                            w.write('\t'.join([str(int(read_time/benchmark_parameters.speedup)).zfill(8),'rs',str(s_id)])+'\n')
                     
                     lines_written += 1
                     if lines_written == benchmark_parameters.output_limit:
