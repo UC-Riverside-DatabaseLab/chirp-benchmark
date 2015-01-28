@@ -83,14 +83,16 @@ def generate_benchmark(process_parameters, benchmark_parameters, file_parameters
                         p_id = tweets_p.rand()
                         if p_id:
                             w.write('\t'.join([str(int(read_time/benchmark_parameters.speedup)).zfill(8),'rp',str(p_id)])+'\n')
+                            lines_written += 1
+                            if lines_written == benchmark_parameters.output_limit:
+                                return
                     else:
                         s_id = tweets_s.rand()
                         if s_id:
                             w.write('\t'.join([str(int(read_time/benchmark_parameters.speedup)).zfill(8),'rs',str(s_id)])+'\n')
-                    
-                    lines_written += 1
-                    if lines_written == benchmark_parameters.output_limit:
-                        return
+                            lines_written += 1
+                            if lines_written == benchmark_parameters.output_limit:
+                                return
                     
                 except UnicodeEncodeError:
                     pass
