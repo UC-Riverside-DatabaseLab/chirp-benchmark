@@ -10,7 +10,7 @@ def parse_args():
     usage = """./chirp.py -i IN_FILE [-o OUT_FILE] [-bs BUFFER_SIZE]
                           [-su SPEEDUP] [-rw RW_RATIO] [-ps PS_RATIO]"""
 
-    description = 'Chirp benchmark program v2.0'
+    description = 'Chirp benchmark program v3.0'
 
     parser = argparse.ArgumentParser(usage=usage, description=description)
 
@@ -50,6 +50,15 @@ def parse_args():
     help = 'Limit total number of commands in the output benchmark file. Default value depends on the number of JSON records in the input file and the read/write ratio.'
     parser.add_argument('-lo', action='store', type=float, dest='output_limit', default=float('inf'), help=help)
 
+    help = 'Read commands query for ranges of key values of this width. Default value is 1, i.e. not a range query.'
+    parser.add_argument('-rrw', action='store', type=int, dest='read_range_width', default=1, help=help)
+
+    help = 'Range read commands query for ranges of exactly the specified width or none at all. Use the width-strictly-enforced flag to set to True. Default value is False.'
+    parser.add_argument('-wse', action='store_true', dest='width_strictly_enforced', default=False, help=help)
+
+    help = 'Key values are sorted in lexicographic order to calculate range widths. Use the keys-not-strings flag to set to False. Default value is True.'
+    parser.add_argument('-kns', action='store_false', dest='keys_not_strings', default=True, help=help)
+
     help = 'Memory buffer size for sorting in terms of number of lines of input file. Default value is 500,000 lines.'
     parser.add_argument('-bs', action='store', type=int, dest='buffer_size', default=500000, help=help)
 
@@ -62,7 +71,7 @@ def parse_args():
     help = 'List of primary and secondary key fields. It should be possible to extract these fields and hold in memory for all records. Repeat flag and provide the primary key followed by the secondary key. Default value is [\'ID\', \'UserID\'].'
     parser.add_argument('-kf', action='append', dest='key_fields', default=[], help=help)
 
-    parser.add_argument('-v', '--version', action='version', version='%(prog)s 2.0')
+    parser.add_argument('-v', '--version', action='version', version='%(prog)s 3.0')
 
     args = parser.parse_args()
 
@@ -85,7 +94,10 @@ def parse_args():
                                                       ps_ratio = args.ps_ratio,
                                                       freshness = args.freshness,
                                                       read_buffer = args.read_buffer,
-                                                      output_limit = args.output_limit)
+                                                      output_limit = args.output_limit,
+                                                      read_range_width = args.read_range_width,
+                                                      width_strictly_enforced = args.width_strictly_enforced,
+                                                      keys_not_strings = args.keys_not_strings)
 
     file_parameters = FileParameters(input_file = args.in_file,
                                             pre_sorted = args.pre_sorted,
