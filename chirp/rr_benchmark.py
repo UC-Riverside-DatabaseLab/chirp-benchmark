@@ -115,7 +115,7 @@ def generate_benchmark(process_parameters, benchmark_parameters, file_parameters
                         else:
                             s_id2 = tweets_s[-1]
                         
-                        w.write('\t'.join([str(int(read_time/benchmark_parameters.speedup)).zfill(8),'rp',str(s_id1),str(s_id2)])+'\n')
+                        w.write('\t'.join([str(int(read_time/benchmark_parameters.speedup)).zfill(8),'rs',str(s_id1),str(s_id2)])+'\n')
                         lines_written += 1
                         if lines_written == benchmark_parameters.output_limit:
                             return
