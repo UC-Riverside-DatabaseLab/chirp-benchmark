@@ -39,8 +39,16 @@ def generate_benchmark(process_parameters, benchmark_parameters, file_parameters
         tweets_s = list()
         n_p = 0
         n_s = 0
-        id_p = (lambda data: str(data[process_parameters.key_fields[0]])) if benchmark_parameters.keys_not_strings else (lambda data: data[process_parameters.key_fields[0]])
-        id_s = (lambda data: str(data[process_parameters.key_fields[1]])) if benchmark_parameters.keys_not_strings else (lambda data: data[process_parameters.key_fields[1]])
+        def id_p(data):
+            f = data[process_parameters.key_fields[0]]
+            if f and benchmark_parameters.keys_not_strings:
+                return str(f)
+            return f
+        def id_s(data):
+            f = data[process_parameters.key_fields[1]]
+            if f and benchmark_parameters.keys_not_strings:
+                return str(f)
+            return f
         
         # Generate benchmark
         read_time = 0
