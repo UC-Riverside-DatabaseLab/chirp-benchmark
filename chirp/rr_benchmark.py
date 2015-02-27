@@ -41,12 +41,12 @@ def generate_benchmark(process_parameters, benchmark_parameters, file_parameters
         n_s = 0
         def id_p(data):
             f = data[process_parameters.key_fields[0]]
-            if f and benchmark_parameters.keys_not_strings:
+            if f is not None and benchmark_parameters.keys_not_strings:
                 return str(f)
             return f
         def id_s(data):
             f = data[process_parameters.key_fields[1]]
-            if f and benchmark_parameters.keys_not_strings:
+            if f is not None and benchmark_parameters.keys_not_strings:
                 return str(f)
             return f
         
@@ -72,12 +72,18 @@ def generate_benchmark(process_parameters, benchmark_parameters, file_parameters
                         return
                     
                     # Insert the just-written tweet into the read buffer
-                    if id_p(tweet_to_write):
-                        bisect.insort(tweets_p, id_p(tweet_to_write))
-                        n_p = len(tweets_p)
-                    if id_s(tweet_to_write):
-                        bisect.insort(tweets_s, id_s(tweet_to_write))
-                        n_s = len(tweets_s)
+                    try:
+                        if id_p(tweet_to_write):
+                            bisect.insort(tweets_p, id_p(tweet_to_write))
+                            n_p = len(tweets_p)
+                    except UnicodeEncodeError:
+                        pass
+                    try:
+                        if id_s(tweet_to_write):
+                            bisect.insort(tweets_s, id_s(tweet_to_write))
+                            n_s = len(tweets_s)
+                    except UnicodeEncodeError:
+                        pass
                     
                     try:
                         tweet_to_write = ujson.loads(sorted_file.next())
